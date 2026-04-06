@@ -3,12 +3,11 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
-
+// Serve index.html from root directory (no public folder needed)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`WinDiag Portal running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`WinDiag running on port ${PORT}`);
 });
