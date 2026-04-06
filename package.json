@@ -1,0 +1,16 @@
+{
+  "name": "windiag-portal",
+  "version": "1.0.0",
+  "description": "Windows Log Analyzer Portal",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

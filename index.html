@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WinDiag — Windows Log Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c24;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --accent: #3b82f6;
+  --accent2: #1d4ed8;
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.08);
+  --green-border: rgba(34,197,94,0.2);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.08);
+  --amber-border: rgba(245,158,11,0.2);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.08);
+  --red-border: rgba(239,68,68,0.2);
+  --blue-bg: rgba(59,130,246,0.08);
+  --blue-border: rgba(59,130,246,0.2);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--border);background:var(--surface)}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.nav-logo-icon svg{width:18px;height:18px;fill:#fff}
+.nav-title{font-size:15px;font-weight:600;letter-spacing:-0.02em}
+.nav-sub{font-size:11px;color:var(--muted);margin-top:-2px}
+.nav-pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+
+/* TABS */
+.tab-bar{display:flex;gap:2px;padding:16px 32px 0;border-bottom:1px solid var(--border);background:var(--surface)}
+.tab{padding:8px 18px;font-size:13px;font-weight:500;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;font-family:var(--sans)}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* MAIN */
+.main{max-width:900px;margin:0 auto;padding:32px 24px}
+
+/* PANELS */
+.panel{display:none}.panel.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
+
+/* SCRIPT SECTION */
+.script-wrap{background:#0d1117;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.script-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.script-filename{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.copy-btn{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:all 0.15s;font-family:var(--sans)}
+.copy-btn:hover{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+.copy-btn.ok{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+pre{font-family:var(--mono);font-size:12px;line-height:1.85;padding:18px;color:#c9d1d9;overflow-x:auto;white-space:pre}
+.kw{color:#ff7b72}.cm{color:#6e7681;font-style:italic}.str{color:#a5d6ff}.var{color:#ffa657}.fn{color:#d2a8ff}
+
+/* STEPS */
+.steps-grid{display:flex;flex-direction:column;gap:10px}
+.step-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.step-n{width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.step-body p{font-size:12px;color:var(--muted);line-height:1.55}
+kbd{display:inline-block;padding:1px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface);font-family:var(--mono);font-size:11px;color:var(--text)}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:36px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:14px;background:var(--surface2)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--blue-bg)}
+.upload-icon{width:48px;height:48px;border-radius:12px;background:var(--blue-bg);border:1px solid var(--blue-border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.upload-icon svg{width:24px;height:24px;stroke:var(--accent);fill:none}
+.upload-zone h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.upload-zone p{font-size:12px;color:var(--muted)}
+#fi{display:none}
+.or-line{display:flex;align-items:center;gap:12px;margin:12px 0;color:var(--muted);font-size:12px}
+.or-line::before,.or-line::after{content:'';flex:1;height:1px;background:var(--border)}
+textarea{width:100%;min-height:110px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-family:var(--mono);font-size:12px;color:var(--text);resize:vertical;line-height:1.6;outline:none;transition:border-color 0.15s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+.btn-row{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.btn-primary{padding:9px 22px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:background 0.15s}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--sans);transition:all 0.15s}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.ftag{font-size:12px;color:var(--accent)}
+
+/* LOADING */
+.loading-wrap{padding:32px;text-align:center}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted)}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;margin:12px auto;max-width:200px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s}
+
+/* DASHBOARD */
+.dash-verdict{border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px}
+.dv-red{background:var(--red-bg);border:1px solid var(--red-border)}
+.dv-amber{background:var(--amber-bg);border:1px solid var(--amber-border)}
+.dv-green{background:var(--green-bg);border:1px solid var(--green-border)}
+.dv-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.dv-title{font-size:16px;font-weight:600;margin-bottom:3px}
+.dv-red .dv-title{color:var(--red)}
+.dv-amber .dv-title{color:var(--amber)}
+.dv-green .dv-title{color:var(--green)}
+.dv-sub{font-size:13px;color:var(--muted)}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat-val{font-size:26px;font-weight:600;font-family:var(--mono);margin-bottom:2px}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.sv-red{color:var(--red)}.sv-amber{color:var(--amber)}.sv-green{color:var(--green)}.sv-blue{color:var(--accent)}
+
+.progress-track{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.pt-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.pt-fill{height:100%;background:var(--green);border-radius:3px;transition:width 0.3s}
+.pt-text{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+.section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;margin-top:4px}
+
+.issue-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden}
+.issue-header{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;transition:background 0.15s;user-select:none}
+.issue-header:hover{background:var(--surface2)}
+.issue-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.in-hw{background:var(--red-bg);color:var(--red)}
+.in-sw{background:var(--blue-bg);color:var(--accent)}
+.in-cfg{background:var(--amber-bg);color:var(--amber)}
+.in-drv{background:rgba(139,92,246,0.12);color:#a78bfa}
+.issue-title{flex:1;font-size:13px;font-weight:600;color:var(--text)}
+.issue-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em}
+.ib-hw{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.ib-sw{background:var(--blue-bg);color:var(--accent);border:1px solid var(--blue-border)}
+.ib-cfg{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.ib-drv{background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.2)}
+.chevron{font-size:11px;color:var(--muted);transition:transform 0.2s;flex-shrink:0}
+.chevron.open{transform:rotate(90deg)}
+
+.issue-body{display:none;border-top:1px solid var(--border);padding:14px 16px 16px}
+.issue-body.open{display:block}
+.cause-line{font-size:12px;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;border-left:3px solid var(--border2)}
+.checklist{list-style:none;padding:0}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5}
+.cl-item:last-child{border:none;padding-bottom:0}
+.chkbox{width:20px;height:20px;border:1.5px solid var(--border2);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.15s}
+.chkbox:hover{border-color:var(--accent)}
+.chkbox.done{background:var(--accent);border-color:var(--accent)}
+.chkbox.done::after{content:'';display:block;width:10px;height:6px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.cl-text{color:var(--text)}.cl-text.done{color:var(--muted);text-decoration:line-through}
+
+.reset-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-top:16px;padding:8px 14px;border-radius:6px;border:1px solid var(--border);transition:all 0.15s}
+.reset-link:hover{color:var(--text);border-color:var(--border2)}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 16px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  nav{padding:12px 16px}
+  .tab-bar{padding:12px 16px 0;overflow-x:auto;gap:0}
+  .main{padding:20px 16px}
+  .stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></svg>
+    </div>
+    <div>
+      <div class="nav-title">WinDiag Portal</div>
+      <div class="nav-sub">Windows Log Analyzer</div>
+    </div>
+  </div>
+  <div class="nav-pill">Live</div>
+</nav>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="switchTab('script')">Get Script</button>
+  <button class="tab" onclick="switchTab('analyze')">Analyze Logs</button>
+  <button class="tab" onclick="switchTab('dashboard')" id="tab-dash" style="display:none">Dashboard</button>
+</div>
+
+<div class="main">
+
+  <!-- SCRIPT TAB -->
+  <div class="panel active" id="panel-script">
+    <div class="card">
+      <div class="card-title">Step 1 — Download &amp; run on the laptop</div>
+      <div class="steps-grid">
+        <div class="step-row"><div class="step-n">1</div><div class="step-body"><h4>Open PowerShell as Administrator</h4><p>Press <kbd>Win + X</kbd> → click <strong>Windows PowerShell (Admin)</strong> or <strong>Terminal (Admin)</strong></p></div></div>
+        <div class="step-row"><div class="step-n">2</div><div class="step-body"><h4>One-time setup (first use only)</h4><p>Run: <kbd>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</kbd> → press <kbd>Y</kbd></p></div></div>
+        <div class="step-row"><div class="step-n">3</div><div class="step-body"><h4>Run the script below</h4><p>Copy the script → paste into PowerShell → press <kbd>Enter</kbd>. Takes about 20–30 seconds.</p></div></div>
+        <div class="step-row"><div class="step-n">4</div><div class="step-body"><h4>File saved to Desktop automatically</h4><p>A file named <kbd>WinDiag_7Days_YYYYMMDD_HHMM.csv</kbd> appears on the Desktop and the folder opens.</p></div></div>
+        <div class="step-row"><div class="step-n">5</div><div class="step-body"><h4>Upload to Analyze tab</h4><p>Come back here → click <strong>Analyze Logs</strong> tab → upload the CSV → get your diagnosis instantly.</p></div></div>
+      </div>
+    </div>
+
+    <div class="script-wrap">
+      <div class="script-header">
+        <span class="script-filename">WinDiag_7Days.ps1</span>
+        <button class="copy-btn" id="cpbtn" onclick="copyScript()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy script
+        </button>
+      </div>
+      <pre id="script-text"><span class="cm"># ============================================================
+#  WinDiag_7Days.ps1  —  Last 7 days of critical Windows logs
+#  Run as Administrator
+#  Output: WinDiag_7Days_YYYYMMDD_HHMM.csv saved to Desktop
+# ============================================================</span>
+
+<span class="var">$days</span>  = <span class="str">7</span>
+<span class="var">$start</span> = (Get-Date).AddDays(-<span class="var">$days</span>)
+<span class="var">$out</span>   = <span class="str">"$env:USERPROFILE\Desktop\WinDiag_7Days_$(Get-Date -f yyyyMMdd_HHmm).csv"</span>
+<span class="var">$all</span>   = @()
+
+Write-Host <span class="str">""</span>
+Write-Host <span class="str">"  WinDiag — Windows Log Collector (Last $days Days)"</span> -ForegroundColor Cyan
+Write-Host <span class="str">"  ---------------------------------------------------"</span> -ForegroundColor DarkGray
+Write-Host <span class="str">""</span>
+
+<span class="cm"># --- System, Application, Security logs ---</span>
+<span class="var">$logs</span> = @(<span class="str">"System"</span>, <span class="str">"Application"</span>, <span class="str">"Security"</span>)
+<span class="kw">foreach</span> (<span class="var">$log</span> <span class="kw">in</span> <span class="var">$logs</span>) {
+    Write-Host <span class="str">"  Collecting $log log..."</span> -ForegroundColor Gray
+    <span class="kw">try</span> {
+        Get-WinEvent -FilterHashtable @{
+            LogName   = <span class="var">$log</span>
+            Level     = <span class="str">1</span>, <span class="str">2</span>, <span class="str">3</span>
+            StartTime = <span class="var">$start</span>
+        } -ErrorAction SilentlyContinue | <span class="kw">ForEach-Object</span> {
+            <span class="var">$all</span> += [PSCustomObject]@{
+                Time    = <span class="var">$_</span>.TimeCreated.ToString(<span class="str">"yyyy-MM-dd HH:mm:ss"</span>)
+                Log     = <span class="var">$log</span>
+                EventID = <span class="var">$_</span>.Id
+                Level   = <span class="var">$_</span>.LevelDisplayName
+                Source  = <span class="var">$_</span>.ProviderName
+                Message = (<span class="var">$_</span>.Message -replace <span class="str">"`r`n"</span>, <span class="str">" "</span> -replace <span class="str">","</span>, <span class="str">" "</span>)
+            }
+        }
+    } <span class="kw">catch</span> {}
+}
+
+<span class="cm"># --- Power & Battery logs ---</span>
+<span class="var">$powerLogs</span> = @(
+    <span class="str">"Microsoft-Windows-Kernel-Power/Operational"</span>,
+    <span class="str">"Microsoft-Windows-Power-Troubleshooter/Operational"</span>
+)
+<span class="kw">foreach</span> (<span class="var">$pl</span> <span class="kw">in</span> <span class="var">$powerLogs</span>) {
+    Write-Host <span class="str">"  Collecting Power log..."</span> -ForegroundColor Gray
+    <span class="kw">try</span> {
+        Get-WinEvent -FilterHashtable @{
+            LogName   = <span class="var">$pl</span>
+            StartTime = <span class="var">$start</span>
+        } -ErrorAction SilentlyContinue | <span class="kw">ForEach-Object</span> {
+            <span class="var">$all</span> += [PSCustomObject]@{
+                Time    = <span class="var">$_</span>.TimeCreated.ToString(<span class="str">"yyyy-MM-dd HH:mm:ss"</span>)
+                Log     = <span class="str">"Power"</span>
+                EventID = <span class="var">$_</span>.Id
+                Level   = <span class="var">$_</span>.LevelDisplayName
+                Source  = <span class="var">$_</span>.ProviderName
+                Message = (<span class="var">$_</span>.Message -replace <span class="str">"`r`n"</span>, <span class="str">" "</span> -replace <span class="str">","</span>, <span class="str">" "</span>)
+            }
+        }
+    } <span class="kw">catch</span> {}
+}
+
+Write-Host <span class="str">""</span>
+
+<span class="cm"># --- Save or report empty ---</span>
+<span class="kw">if</span> (<span class="var">$all</span>.Count -eq <span class="str">0</span>) {
+    Write-Host <span class="str">"  No critical events found in the last $days days."</span> -ForegroundColor Yellow
+} <span class="kw">else</span> {
+    <span class="var">$all</span> | Sort-Object Time -Descending |
+        Export-Csv <span class="var">$out</span> -NoTypeInformation -Encoding UTF8
+    Write-Host <span class="str">"  Done! $($all.Count) events collected."</span> -ForegroundColor Green
+    Write-Host <span class="str">"  File saved to: $out"</span> -ForegroundColor Cyan
+    Write-Host <span class="str">""</span>
+    Invoke-Item (Split-Path <span class="var">$out</span>)
+}
+
+Write-Host <span class="str">"  Press any key to close..."</span> -ForegroundColor DarkGray
+<span class="var">$null</span> = <span class="var">$Host</span>.UI.RawUI.ReadKey(<span class="str">"NoEcho,IncludeKeyDown"</span>)</pre>
+    </div>
+
+    <button class="btn-primary" onclick="switchTab('analyze')" style="margin-top:4px">Go to Analyze Logs →</button>
+  </div>
+
+  <!-- ANALYZE TAB -->
+  <div class="panel" id="panel-analyze">
+    <div class="card">
+      <div class="card-title">Upload the CSV from your laptop</div>
+      <div class="upload-zone" id="dz" onclick="document.getElementById('fi').click()" ondragover="dd(event,true)" ondragleave="dd(event,false)" ondrop="dp(event)">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        </div>
+        <h3>Drop WinDiag_7Days_*.csv here</h3>
+        <p>or click to browse · exported from the laptop using the script above</p>
+      </div>
+      <input type="file" id="fi" accept=".csv,.txt,.log,.xml" onchange="lf(event)">
+
+      <div class="or-line">or paste log content directly</div>
+      <textarea id="pt" placeholder="Paste Windows event log content here (CSV rows, Event Viewer copy-paste, or PowerShell output)..."></textarea>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="go()">Analyze Logs →</button>
+        <button class="btn-ghost" onclick="demo()">Try demo data</button>
+        <span class="ftag" id="fn"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div class="panel" id="panel-dashboard">
+    <div id="dash-content">
+      <div class="empty"><div class="empty-icon">📋</div><p>No analysis yet — upload a log file in the Analyze tab.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let raw='', allChecks=[];
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${t}')"]`).classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+function copyScript(){
+  const el=document.getElementById('script-text');
+  const plain=el.innerText||el.textContent;
+  navigator.clipboard.writeText(plain).then(()=>{
+    const b=document.getElementById('cpbtn');
+    b.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    b.classList.add('ok');
+    setTimeout(()=>{b.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy script';b.classList.remove('ok');},2500);
+  });
+}
+
+function dd(e,on){e.preventDefault();document.getElementById('dz').classList.toggle('drag',on)}
+function dp(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');if(e.dataTransfer.files[0])rf(e.dataTransfer.files[0])}
+function lf(e){if(e.target.files[0])rf(e.target.files[0])}
+function rf(f){document.getElementById('fn').textContent=f.name;const r=new FileReader();r.onload=ev=>{raw=ev.target.result;document.getElementById('pt').value='['+f.name+' loaded — '+raw.length+' chars]'};r.readAsText(f)}
+
+const DEMO=`Time,Log,EventID,Level,Source,Message
+2025-04-02 03:14:22,System,41,Critical,Microsoft-Windows-Kernel-Power,The system has rebooted without cleanly shutting down first.
+2025-04-02 03:22:10,System,41,Critical,Microsoft-Windows-Kernel-Power,The system has rebooted without cleanly shutting down first.
+2025-04-01 09:05:17,System,7,Error,disk,The device HarddiskVolume3 has a bad block.
+2025-04-01 11:22:44,System,7,Error,disk,The device HarddiskVolume3 has a bad block.
+2025-04-01 13:44:01,System,7,Error,disk,The device HarddiskVolume3 has a bad block.
+2025-04-01 14:32:11,Application,1000,Error,Application Error,Faulting application name: chrome.exe Exception code: 0xc0000005
+2025-04-01 15:11:40,Application,1000,Error,Application Error,Faulting application name: chrome.exe Exception code: 0xc0000374
+2025-04-01 18:30:05,System,13,Warning,ACPI,The embedded controller EC did not respond within the specified timeout period.
+2025-04-01 20:15:44,System,2004,Warning,Microsoft-Windows-Resource-Exhaustion-Resolver,Windows successfully diagnosed a low virtual memory condition. chrome.exe consumed 1845321728 bytes
+2025-04-02 08:00:01,System,7034,Error,Service Control Manager,The Windows Update service terminated unexpectedly. It has done this 3 times.
+2025-04-02 09:11:00,Application,1026,Error,.NET Runtime,Application: Outlook.exe CLR Version: 4.0.30319.0 unhandled exception`;
+
+function demo(){raw=DEMO;document.getElementById('pt').value='[Demo data loaded — 11 events]';document.getElementById('fn').textContent='demo_WinDiag.csv'}
+
+const RULES=[
+  {pat:/\b41\b.*kernel.power|kernel.power.*\b41\b|rebooted without cleanly/i,
+   title:'Unexpected restarts',cause:'System shut down without a clean shutdown — likely power supply, overheating, or RAM fault.',t:'hw',
+   steps:['Run powercfg /batteryreport — open BatteryReport.html from Desktop','If battery Full Charge Capacity < 60% of Design Capacity → replace battery','Download HWMonitor — check CPU temp under load. Above 85°C = overheating','Clean laptop vents with compressed air','Run mdsched.exe to test RAM — requires a reboot to run']},
+  {pat:/\b7\b.*disk|\bdisk\b.*\b7\b|bad block/i,
+   title:'Disk bad blocks — drive failing',cause:'Hard drive has bad sectors. Data loss risk. Back up data immediately.',t:'hw',
+   steps:['BACK UP ALL DATA NOW before any other step','Open CMD as Admin → run: chkdsk C: /f /r → press Y → restart','Download CrystalDiskInfo — if health shows Caution or Bad → replace drive','For SSD use manufacturer tool (Samsung Magician / Kingston SSD Manager)']},
+  {pat:/chrome\.exe/i,
+   title:'Chrome crashing',cause:'Chrome is unstable — bad extension, outdated version, or GPU driver conflict.',t:'sw',
+   steps:['Update Chrome: menu → Help → About Google Chrome','Go to chrome://extensions → disable ALL → test if stable','If stable: re-enable one by one to find the bad extension','Settings → Advanced → System → turn off hardware acceleration → relaunch']},
+  {pat:/\b1000\b.*application|faulting application|exception code/i,
+   title:'Application crash (Event 1000)',cause:'One or more apps are crashing repeatedly.',t:'sw',
+   steps:['Settings → Apps → find the crashing app → click Repair','If repair fails: uninstall fully → reinstall from official website','For Office apps: Control Panel → Microsoft Office → Change → Quick Repair']},
+  {pat:/\b13\b.*acpi|acpi.*\b13\b|embedded controller|EC did not respond/i,
+   title:'Battery / EC controller issue',cause:'The embedded controller managing battery is timing out — common on aging batteries.',t:'hw',
+   steps:['Run: powercfg /batteryreport → open BatteryReport.html from Desktop','If Full Charge Capacity < 60% of Design Capacity → replace battery','Device Manager → Batteries → right-click ACPI Battery → Uninstall → reboot','Visit manufacturer site → download latest BIOS update']},
+  {pat:/\b2004\b|low virtual memory|resource.exhaustion/i,
+   title:'Low memory — causing slowness',cause:'System ran out of virtual memory — causing slowness, stuttering, and crashes.',t:'cfg',
+   steps:['Ctrl+Shift+Esc → Task Manager → sort by Memory → close unused apps','Task Manager → Startup tab → disable non-essential startup items','Control Panel → System → Advanced → Performance → Virtual Memory → set to 1.5× RAM','If memory always above 90% → upgrade RAM']},
+  {pat:/\b7034\b|service.*terminated unexpectedly/i,
+   title:'Windows services crashing',cause:'Core Windows services are failing — usually OS file corruption.',t:'sw',
+   steps:['CMD as Admin → run: sfc /scannow → wait for completion','Then run: DISM /Online /Cleanup-Image /RestoreHealth','Restart → run sfc /scannow again to confirm fixed']},
+  {pat:/\b1026\b|outlook\.exe|unhandled exception.*clr/i,
+   title:'Outlook crashing (.NET error)',cause:'Outlook crashed due to a bad add-in or corrupt profile.',t:'sw',
+   steps:['Hold Ctrl + click Outlook icon → open in Safe Mode — if stable, an add-in is the cause','File → Options → Add-ins → Go → uncheck all add-ins → restart Outlook','Control Panel → Programs → Microsoft Office → Change → Online Repair']}
+];
+
+function go(){
+  const txt=raw||document.getElementById('pt').value;
+  if(!txt.trim()){alert('Please upload a file or paste log content first.');return}
+  const found=RULES.filter(r=>r.pat.test(txt));
+  renderDash(found,txt);
+  document.getElementById('tab-dash').style.display='';
+  switchTab('dashboard');
+}
+
+function renderDash(found,txt){
+  allChecks=[];
+  const dc=document.getElementById('dash-content');
+  if(!found.length){dc.innerHTML=`<div class="empty"><div class="empty-icon">✅</div><p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">No issues detected</p><p>The logs look clean for the last 7 days.</p><br><span class="reset-link" onclick="resetAnalysis()">← Analyze another file</span></div>`;return}
+
+  const hw=found.filter(f=>f.t==='hw').length;
+  const crit=found.filter(f=>f.t==='hw').length;
+  const totalSteps=found.reduce((a,f)=>a+f.steps.length,0);
+  const lines=txt.split('\n').filter(l=>l.trim()).length;
+
+  const tOrder={hw:0,drv:1,sw:2,cfg:3};
+  found.sort((a,b)=>(tOrder[a.t]||3)-(tOrder[b.t]||3));
+
+  const vClass=hw?'dv-red':'dv-amber';
+  const vIcon=hw?'⚠️':'🔧';
+  const vTitle=hw?'Hardware action likely required':'Software fixes should resolve this';
+  const vSub=hw?'Run software checks first — if they fail, hardware replacement needed.':'No hardware faults detected. Follow the fix checklist below.';
+
+  let h='';
+
+  h+=`<div class="dash-verdict ${vClass}"><div class="dv-icon">${vIcon}</div><div><div class="dv-title">${vTitle}</div><div class="dv-sub">${vSub}</div></div></div>`;
+
+  h+=`<div class="stats-row">
+    <div class="stat-card"><div class="stat-val ${crit?'sv-red':'sv-green'}">${found.length}</div><div class="stat-lbl">Issues found</div></div>
+    <div class="stat-card"><div class="stat-val ${hw?'sv-red':'sv-green'}">${hw}</div><div class="stat-lbl">Hardware actions</div></div>
+    <div class="stat-card"><div class="stat-val sv-blue">${totalSteps}</div><div class="stat-lbl">Fix steps</div></div>
+    <div class="stat-card"><div class="stat-val sv-amber">${Math.min(lines,9999)}</div><div class="stat-lbl">Log events</div></div>
+  </div>`;
+
+  h+=`<div class="progress-track"><div class="pt-bar"><div class="pt-fill" id="ptf" style="width:0%"></div></div><div class="pt-text" id="ptxt">0 / ${totalSteps} steps done</div></div>`;
+
+  h+=`<div class="section-title">Issues &amp; fix checklist — tap to expand</div>`;
+
+  const tLabel={hw:'Hardware',sw:'Software',cfg:'Config',drv:'Driver'};
+  const numCls={hw:'in-hw',sw:'in-sw',cfg:'in-cfg',drv:'in-drv'};
+  const badgeCls={hw:'ib-hw',sw:'ib-sw',cfg:'ib-cfg',drv:'ib-drv'};
+
+  found.forEach((f,fi)=>{
+    h+=`<div class="issue-card">
+      <div class="issue-header" onclick="toggleIssue(${fi})">
+        <div class="issue-num ${numCls[f.t]}">${fi+1}</div>
+        <div class="issue-title">${f.title}</div>
+        <span class="issue-badge ${badgeCls[f.t]}">${tLabel[f.t]}</span>
+        <span class="chevron" id="chv${fi}">&#9654;</span>
+      </div>
+      <div class="issue-body" id="ib${fi}">
+        <div class="cause-line">${f.cause}</div>
+        <ul class="checklist">`;
+    f.steps.forEach((s,si)=>{
+      const cid=`ck_${fi}_${si}`;
+      allChecks.push(cid);
+      h+=`<li class="cl-item"><div class="chkbox" id="${cid}" onclick="tick('${cid}',${fi},${si})"></div><span class="cl-text" id="ct_${fi}_${si}">${s}</span></li>`;
+    });
+    h+=`</ul></div></div>`;
+  });
+
+  h+=`<span class="reset-link" onclick="resetAnalysis()">← Analyze another file</span>`;
+  dc.innerHTML=h;
+  toggleIssue(0);
+}
+
+function toggleIssue(i){
+  const b=document.getElementById('ib'+i);
+  const c=document.getElementById('chv'+i);
+  const isOpen=b.classList.contains('open');
+  b.classList.toggle('open',!isOpen);
+  c.classList.toggle('open',!isOpen);
+}
+
+function tick(cid,fi,si){
+  const box=document.getElementById(cid);
+  box.classList.toggle('done');
+  document.getElementById(`ct_${fi}_${si}`).classList.toggle('done',box.classList.contains('done'));
+  const done=allChecks.filter(c=>{const el=document.getElementById(c);return el&&el.classList.contains('done')}).length;
+  const pct=Math.round(done/allChecks.length*100);
+  document.getElementById('ptf').style.width=pct+'%';
+  document.getElementById('ptxt').textContent=done+' / '+allChecks.length+' steps done';
+}
+
+function resetAnalysis(){
+  raw='';
+  document.getElementById('pt').value='';
+  document.getElementById('fn').textContent='';
+  document.getElementById('fi').value='';
+  document.getElementById('tab-dash').style.display='none';
+  switchTab('analyze');
+}
+</script>
+</body>
+</html>
